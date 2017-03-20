@@ -1,4 +1,4 @@
-package nussinov
+package rnafold
 
 import "testing"
 

@@ -1,13 +1,12 @@
-/*
-Package nussinov predicts RNA secondary structure using the Nussinov algorithm.
-Input:
-- A sequence composed of nucleotide bases (A,C,G,T)
-Output:
-- The number of base pair matchings
-*/
-package nussinov
+package rnafold
 
 import "math"
+
+// RNA secondary structure using the Nussinov algorithm.
+// Input:
+// - A sequence composed of nucleotide bases (A,C,G,T)
+// Output:
+// - The number of base pair matchings
 
 type nussinov struct {
 	sequence string
