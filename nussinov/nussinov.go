@@ -51,8 +51,8 @@ func score(i, j int, n *nussinov) int {
 	jb := string(n.sequence[j])
 	if ib == "G" && jb == "C" ||
 		ib == "C" && jb == "G" ||
-		ib == "A" && jb == "U" ||
-		ib == "U" && jb == "A" {
+		ib == "A" && (jb == "T" || jb == "U") ||
+		(ib == "T" || ib == "U") && jb == "A" {
 		return 1
 	}
 	return 0
