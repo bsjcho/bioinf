@@ -3,20 +3,24 @@ package nussinov
 import "testing"
 
 const (
+	seq       = "GGGAAATCC"
 	mIR1976   = "GCAGCAAGGAAGGCAGGGGTCCTAAGGTGTGTCCTCCTGCCCTCCTTGCTGT"
 	rNA5SP136 = "GTCTGTGGCCATACCACCCAGAACGCACTCGATCTCATCTTATCTCCAAAGCTAAGCATGGTTGGCCTGGTTAGTACTTGGATGGGAGAAAACTGTTATCCTACCTT"
 	bCYRN1    = "GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCTCTCAGGGAGGCTAAGAGGCGGGAGGATAGCTTGAGCCCAGGAGTTCGAGACCTGCCTGGGCAATATAGCGAGACCCCGTTCTCCAGAAAAAGGAAAAAAAAAAACAAAAGACAAAAAAAAAATAAGCGTAACTTCCCTCAAAGCAACAACCCCCCCCCCCCTTT"
 )
 
 func TestSolve(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
+	if Solve(seq) != 3 {
+		t.Fatal("Solving seq failed.")
 	}
-	seq := "GGGAAAUCC"
-	t.Logf("When considering the sequence %v\n", seq)
-	pairCount := Solve(seq)
-	if pairCount == 3 {
-		t.Logf("\tShould be able to calculate max base pairs\n")
+	if Solve(mIR1976) != 21 {
+		t.Fatal("Solving mIR1976 failed.")
+	}
+	if Solve(rNA5SP136) != 44 {
+		t.Fatal("Solving rNA5SP136 failed.")
+	}
+	if Solve(bCYRN1) != 73 {
+		t.Fatal("Solving bCYRN1 failed.")
 	}
 }
 
