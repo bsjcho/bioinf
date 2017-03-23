@@ -55,6 +55,7 @@ func convertStringBase(b string) Base {
 type multiDP struct {
 	seqs        []*Sequence
 	table       *nd.Array
+	cached      *nd.Array
 	subsetMasks [][]int
 }
 
@@ -63,6 +64,7 @@ func newMultiDP(s []*Sequence) *multiDP {
 	return &multiDP{
 		seqs:        s,
 		table:       nd.NewArray(sizes(s)),
+		cached:      nd.NewArray(sizes(s)),
 		subsetMasks: generateSubsetMasks(len(s)),
 	}
 }
@@ -77,7 +79,7 @@ func generateSubsetMasks(size int) [][]int {
 
 func sizes(s []*Sequence) (sizes []int) {
 	for _, seq := range s {
-		sizes = append(sizes, len(seq.bases))
+		sizes = append(sizes, len(seq.bases)+1)
 	}
 	return
 }
@@ -96,27 +98,26 @@ func (m *multiDP) solve() float64 {
 
 func (m *multiDP) f(idxs []int) (best int) {
 	for _, i := range idxs {
-		if i < 0 {
+		if i <= 0 {
 			return
 		}
 	}
-	if m.table.At(idxs) != 0 {
-		fmt.Printf("cached f(%v): %v\n", idxs, m.table.At(idxs))
+	if m.cached.At(idxs) == 1 {
 		return m.table.At(idxs)
 	}
 	for _, mask := range m.subsetMasks {
 		mIdxs, ok := maskedIdxs(idxs, mask)
-		fmt.Printf("mIdxs f(%v): %v - %v\n", idxs, mIdxs, ok)
+		// fmt.Printf("mIdxs f(%v): %v - %v\n", idxs, mIdxs, ok)
 		if !ok { // if an idx is below 0, don't consider this option
 			continue
 		}
 		bestf := m.f(mIdxs)
 		score := m.score(m.maskedBases(idxs, mask))
-		fmt.Printf("score f(%v): %v\n", idxs, score)
 		best = max(best, bestf+score)
 	}
 	m.table.Set(best, idxs)
-	fmt.Printf("calced f(%v): %v\n", idxs, best)
+	m.cached.Set(1, idxs)
+	// fmt.Printf("calced f(%v): %v\n", idxs, best)
 	return
 }
 
