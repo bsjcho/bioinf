@@ -1,7 +1,6 @@
 package mdp
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/bsjcho/nd"
@@ -10,11 +9,6 @@ import (
 // Sequence represents a nucleotide base sequence
 type Sequence struct {
 	bases []Base
-}
-
-// NewSequence is a Sequence constructor
-func NewSequence() *Sequence {
-	return &Sequence{bases: []Base{}}
 }
 
 // Base represents a nucleotide base
@@ -29,38 +23,23 @@ const (
 	X // represents a gap "-"
 )
 
-func convertStringSequence(seq string) *Sequence {
-	s := NewSequence()
-	for _, b := range seq {
-		s.bases = append(s.bases, convertStringBase(string(b)))
-	}
-	return s
-}
-
-func convertStringBase(b string) Base {
-	switch b {
-	case "A":
-		return A
-	case "C":
-		return C
-	case "G":
-		return G
-	case "T":
-		return T
-	default:
-		return X
-	}
-}
+const (
+	// values doubled to be able to use integers during calculations
+	// final result is converted to float then divided by two
+	match    = 6
+	mismatch = -4
+	gap      = -3
+)
 
 type multiDP struct {
-	seqs        []*Sequence
-	table       *nd.Array
-	cached      *nd.Array
+	seqs   []*Sequence // list of sequences
+	table  *nd.Array   // dp table to store optimal scores
+	cached *nd.Array   // to determine if an optimal score has already been
+	// calculated. necessary for memoization since scores can be 0
 	subsetMasks [][]int
 }
 
 func newMultiDP(s []*Sequence) *multiDP {
-
 	return &multiDP{
 		seqs:        s,
 		table:       nd.NewArray(sizes(s)),
@@ -69,19 +48,27 @@ func newMultiDP(s []*Sequence) *multiDP {
 	}
 }
 
-func generateSubsetMasks(size int) [][]int {
+/*
+generateSubsetMasks takes in the number of sequences being compared
+and will generate the column masks which are to be used in the optimal score
+computation. these masks are generated once at the start.
+ie. generateSubsetMasks(3) will return the following column "masks"
+[1 1 1]
+[1 1 0]
+[1 0 1]
+[1 0 0]
+[0 1 1]
+[0 1 0]
+[0 0 1]
+notice that [0 0 0] has been removed from the subset masks so as to
+prevent alignments from containing columns entirely composed of gaps.
+*/
+func generateSubsetMasks(numSeqCompared int) [][]int {
 	x := []int{}
-	for i := 0; i < size; i++ {
+	for i := 0; i < numSeqCompared; i++ {
 		x = append(x, 1)
 	}
 	return findSubsets(x)
-}
-
-func sizes(s []*Sequence) (sizes []int) {
-	for _, seq := range s {
-		sizes = append(sizes, len(seq.bases)+1)
-	}
-	return
 }
 
 // Solve takes in a list of sequences and returns score of the optimal alignment
@@ -91,33 +78,93 @@ func Solve(s []*Sequence) float64 {
 }
 
 func (m *multiDP) solve() float64 {
-	maxIdxs := m.maxIndices()
-	fmt.Println(maxIdxs)
-	return float64(m.f(maxIdxs)) / 2
+	optScore := m.optimalScore(m.maxIndices())
+	// values doubled to be able to use integers during calculations
+	// final result is converted to float then divided by two
+	// see const block declared above
+	return float64(optScore) / 2
 }
 
-func (m *multiDP) f(idxs []int) (best int) {
+// uses memoization as opposed to tabulation/dp
+// represents optimal score function F(i1, i2, i3, ... , in)
+func (m *multiDP) optimalScore(idxs []int) (best int) {
+	// base case
 	for _, i := range idxs {
 		if i <= 0 {
 			return
 		}
 	}
+	// have we calculated the score for these indices before?
 	if m.cached.At(idxs) == 1 {
 		return m.table.At(idxs)
 	}
+	// see generateSubsetMasks() comment for explaination of subset masks
+	// iterate over all possible masks to find the optimal score
 	for _, mask := range m.subsetMasks {
 		mIdxs, ok := maskedIdxs(idxs, mask)
 		// fmt.Printf("mIdxs f(%v): %v - %v\n", idxs, mIdxs, ok)
-		if !ok { // if an idx is below 0, don't consider this option
+		if !ok {
+			// if an index in the masked indices is below zero, we should skip it
+			// because a negative index is invalid and undefined.
 			continue
 		}
-		bestf := m.f(mIdxs)
-		score := m.score(m.maskedBases(idxs, mask))
-		best = max(best, bestf+score)
+		// find optimal score of masked indices
+		optScore := m.optimalScore(mIdxs)
+
+		// maskedBases are the bases (and gaps) given the current indices (idxs)
+		// and the mask.
+		bases := m.maskedBases(idxs, mask)
+		// calculate the score of this column of bases (and gaps) using sum-of-pairs
+		score := m.score(bases)
+
+		// maintain best score
+		best = max(best, optScore+score)
 	}
+	// save results. mark this specific set of indicies as cached.
 	m.table.Set(best, idxs)
 	m.cached.Set(1, idxs)
 	// fmt.Printf("calced f(%v): %v\n", idxs, best)
+	return
+}
+
+// score takes a column of bases and gaps and returns the sum-of-pairs score.
+func (m *multiDP) score(bases []Base) (sum int) {
+	for i, bi := range bases[:len(bases)-1] {
+		for _, bj := range bases[i+1:] {
+			sum += pairScore(bi, bj)
+		}
+	}
+	return
+}
+
+// returns the score of a pair of bases (or gap)
+func pairScore(b1, b2 Base) int {
+	if b1 == X && b2 == X {
+		return 0
+	}
+	if (b1 == X && b2 != X) ||
+		(b2 == X && b1 != X) {
+		return gap
+	}
+	if b1 != b2 {
+		return mismatch
+	}
+	return match
+}
+
+/////////////////////////
+// Helper Functions
+/////////////////////////
+
+// NewSequence is a Sequence constructor
+func NewSequence() *Sequence {
+	return &Sequence{bases: []Base{}}
+}
+
+func sizes(s []*Sequence) (sizes []int) {
+	for _, seq := range s {
+		sizes = append(sizes, len(seq.bases)+1)
+	}
 	return
 }
 
@@ -152,39 +199,7 @@ func (m *multiDP) maxIndices() (indices []int) {
 	return
 }
 
-func (m *multiDP) score(bases []Base) (sum int) {
-	for i, bi := range bases[:len(bases)-1] {
-		for _, bj := range bases[i+1:] {
-			sum += pairScore(bi, bj)
-		}
-	}
-	return
-}
-
-const (
-	// values doubled to be able to use integers during calculations
-	match    = 6
-	mismatch = -4
-	gap      = -3
-)
-
-func pairScore(b1, b2 Base) int {
-	if b1 == X && b2 == X {
-		return 0
-	}
-	if (b1 == X && b2 != X) ||
-		(b2 == X && b1 != X) {
-		return gap
-	}
-	if b1 != b2 {
-		return mismatch
-	}
-	return match
-}
-
-///////////////////////// Helpers
-
-func subbedIndices(idxs []int) (si []int) {
+func decrementedIndices(idxs []int) (si []int) {
 	for _, i := range idxs {
 		si = append(si, i-1)
 	}
@@ -197,7 +212,7 @@ func findSubsets(idxs []int) (subsets [][]int) {
 }
 
 func purgeAllGapCase(idxs []int, subsets [][]int) (ss [][]int) {
-	si := subbedIndices(idxs)
+	si := decrementedIndices(idxs)
 	for _, subset := range subsets {
 		if !arraysMatch(subset, si) {
 			ss = append(ss, subset)
@@ -234,6 +249,29 @@ func cpy(a []int) (b []int) {
 	b = make([]int, len(a))
 	copy(b, a)
 	return
+}
+
+func convertStringSequence(seq string) *Sequence {
+	s := NewSequence()
+	for _, b := range seq {
+		s.bases = append(s.bases, convertStringBase(string(b)))
+	}
+	return s
+}
+
+func convertStringBase(b string) Base {
+	switch b {
+	case "A":
+		return A
+	case "C":
+		return C
+	case "G":
+		return G
+	case "T":
+		return T
+	default:
+		return X
+	}
 }
 
 func max(ints ...int) int {
