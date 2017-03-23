@@ -3,24 +3,8 @@ package mdp
 import (
 	"math"
 
+	bio "github.com/bsjcho/bioinf"
 	"github.com/bsjcho/nd"
-)
-
-// Sequence represents a nucleotide base sequence
-type Sequence struct {
-	bases []Base
-}
-
-// Base represents a nucleotide base
-type Base int
-
-// A ... enum represents a nucleotide
-const (
-	A Base = iota
-	C
-	G
-	T
-	X // represents a gap "-"
 )
 
 const (
@@ -32,14 +16,14 @@ const (
 )
 
 type multiDP struct {
-	seqs   []*Sequence // list of sequences
-	table  *nd.Array   // dp table to store optimal scores
-	cached *nd.Array   // to determine if an optimal score has already been
+	seqs   []*bio.Sequence // list of sequences
+	table  *nd.Array       // dp table to store optimal scores
+	cached *nd.Array       // to determine if an optimal score has already been
 	// calculated. necessary for memoization since scores can be 0
 	subsetMasks [][]int
 }
 
-func newMultiDP(s []*Sequence) *multiDP {
+func newMultiDP(s []*bio.Sequence) *multiDP {
 	return &multiDP{
 		seqs:        s,
 		table:       nd.NewArray(sizes(s)),
@@ -73,9 +57,9 @@ func generateSubsetMasks(numSeqCompared int) [][]int {
 
 // Solve takes in a list of sequences and returns score of the optimal alignment
 func Solve(seqStrings []string) float64 {
-	seqs := []*Sequence{}
+	seqs := []*bio.Sequence{}
 	for _, seqStr := range seqStrings {
-		seqs = append(seqs, convertStringSequence(seqStr))
+		seqs = append(seqs, bio.AToSeq(seqStr))
 	}
 	mdp := newMultiDP(seqs)
 	return mdp.solve()
@@ -132,7 +116,7 @@ func (m *multiDP) optimalScore(idxs []int) (best int) {
 }
 
 // score takes a column of bases and gaps and returns the sum-of-pairs score.
-func (m *multiDP) score(bases []Base) (sum int) {
+func (m *multiDP) score(bases []bio.Base) (sum int) {
 	for i, bi := range bases[:len(bases)-1] {
 		for _, bj := range bases[i+1:] {
 			sum += pairScore(bi, bj)
@@ -142,12 +126,12 @@ func (m *multiDP) score(bases []Base) (sum int) {
 }
 
 // returns the score of a pair of bases (or gap)
-func pairScore(b1, b2 Base) int {
-	if b1 == X && b2 == X {
+func pairScore(b1, b2 bio.Base) int {
+	if b1 == bio.X && b2 == bio.X {
 		return 0
 	}
-	if (b1 == X && b2 != X) ||
-		(b2 == X && b1 != X) {
+	if (b1 == bio.X && b2 != bio.X) ||
+		(b2 == bio.X && b1 != bio.X) {
 		return gap
 	}
 	if b1 != b2 {
@@ -160,14 +144,9 @@ func pairScore(b1, b2 Base) int {
 // Helper Functions
 /////////////////////////
 
-// NewSequence is a Sequence constructor
-func NewSequence() *Sequence {
-	return &Sequence{bases: []Base{}}
-}
-
-func sizes(s []*Sequence) (sizes []int) {
+func sizes(s []*bio.Sequence) (sizes []int) {
 	for _, seq := range s {
-		sizes = append(sizes, len(seq.bases)+1)
+		sizes = append(sizes, len(seq.Bases)+1)
 	}
 	return
 }
@@ -183,13 +162,13 @@ func maskedIdxs(idxs, mask []int) (mIdxs []int, ok bool) {
 	return mIdxs, true
 }
 
-func (m *multiDP) maskedBases(idxs, mask []int) (bases []Base) {
+func (m *multiDP) maskedBases(idxs, mask []int) (bases []bio.Base) {
 	for i, idx := range idxs {
-		var b Base
+		var b bio.Base
 		if mask[i] == 1 { // not a gap
-			b = m.seqs[i].bases[idx-1]
+			b = m.seqs[i].Bases[idx-1]
 		} else {
-			b = X
+			b = bio.X
 		}
 		bases = append(bases, b)
 	}
@@ -253,29 +232,6 @@ func cpy(a []int) (b []int) {
 	b = make([]int, len(a))
 	copy(b, a)
 	return
-}
-
-func convertStringSequence(seq string) *Sequence {
-	s := NewSequence()
-	for _, b := range seq {
-		s.bases = append(s.bases, convertStringBase(string(b)))
-	}
-	return s
-}
-
-func convertStringBase(b string) Base {
-	switch b {
-	case "A":
-		return A
-	case "C":
-		return C
-	case "G":
-		return G
-	case "T":
-		return T
-	default:
-		return X
-	}
 }
 
 func max(ints ...int) int {

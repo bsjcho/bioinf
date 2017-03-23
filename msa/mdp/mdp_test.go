@@ -33,32 +33,13 @@ func TestGenSubMasks(t *testing.T) {
 	}
 }
 
-func TestConversion(t *testing.T) {
-	seq := convertStringSequence(x1)
-	rSeq := []Base{A, A, T, T, A, T, G, G}
-	for i, b := range seq.bases {
-		if rSeq[i] != b {
-			t.Errorf("base conversion failed: %v %v\n", rSeq[i], b)
-		}
-	}
-}
-
-func solveSeqs(seqStrings []string) float64 {
-	seqs := []*Sequence{}
-	for _, seqStr := range seqStrings {
-		seqs = append(seqs, convertStringSequence(seqStr))
-	}
-	mdp := newMultiDP(seqs)
-	return mdp.solve()
-}
-
 func TestMDP(t *testing.T) {
 	t.Log(Solve([]string{x1, x2, x3, x4}))
 }
 
 func TestMDPSimple(t *testing.T) {
-	optScore := solveSeqs([]string{x5, x6, x7, x8})
-	fmt.Println(optScore)
+	optScore := Solve([]string{x5, x6, x7, x8})
+	t.Log(optScore)
 	if optScore != 36 {
 		t.Error("wrong score for simple MDP")
 	}
