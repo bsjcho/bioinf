@@ -53,7 +53,7 @@ func solveSeqs(seqStrings []string) float64 {
 }
 
 func TestMDP(t *testing.T) {
-	fmt.Println(solveSeqs([]string{x1, x2, x3, x4}))
+	t.Log(Solve([]string{x1, x2, x3, x4}))
 }
 
 func TestMDPSimple(t *testing.T) {

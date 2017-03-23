@@ -72,8 +72,12 @@ func generateSubsetMasks(numSeqCompared int) [][]int {
 }
 
 // Solve takes in a list of sequences and returns score of the optimal alignment
-func Solve(s []*Sequence) float64 {
-	mdp := newMultiDP(s)
+func Solve(seqStrings []string) float64 {
+	seqs := []*Sequence{}
+	for _, seqStr := range seqStrings {
+		seqs = append(seqs, convertStringSequence(seqStr))
+	}
+	mdp := newMultiDP(seqs)
 	return mdp.solve()
 }
 
