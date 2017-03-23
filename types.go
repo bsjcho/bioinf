@@ -22,6 +22,14 @@ const (
 	X // represents a gap "-"
 )
 
+// AsToSeqs converts strings to Sequences
+func AsToSeqs(seqStrs []string) (seqs []*Sequence) {
+	for _, seqStr := range seqStrs {
+		seqs = append(seqs, AToSeq(seqStr))
+	}
+	return
+}
+
 // AToSeq converts string to Sequence
 func AToSeq(seq string) *Sequence {
 	s := NewSequence()
