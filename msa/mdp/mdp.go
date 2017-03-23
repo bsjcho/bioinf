@@ -7,14 +7,6 @@ import (
 	"github.com/bsjcho/nd"
 )
 
-const (
-	// values doubled to be able to use integers during calculations
-	// final result is converted to float then divided by two
-	match    = 6
-	mismatch = -4
-	gap      = -3
-)
-
 type multiDP struct {
 	seqs   []*bio.Sequence // list of sequences
 	table  *nd.Array       // dp table to store optimal scores
@@ -103,7 +95,7 @@ func (m *multiDP) optimalScore(idxs []int) (best int) {
 		// and the mask.
 		bases := m.maskedBases(idxs, mask)
 		// calculate the score of this column of bases (and gaps) using sum-of-pairs
-		score := m.score(bases)
+		score := bio.ColumnSPScore(bases)
 
 		// maintain best score
 		best = max(best, optScore+score)
@@ -113,31 +105,6 @@ func (m *multiDP) optimalScore(idxs []int) (best int) {
 	m.cached.Set(1, idxs)
 	// fmt.Printf("calced f(%v): %v\n", idxs, best)
 	return
-}
-
-// score takes a column of bases and gaps and returns the sum-of-pairs score.
-func (m *multiDP) score(bases []bio.Base) (sum int) {
-	for i, bi := range bases[:len(bases)-1] {
-		for _, bj := range bases[i+1:] {
-			sum += pairScore(bi, bj)
-		}
-	}
-	return
-}
-
-// returns the score of a pair of bases (or gap)
-func pairScore(b1, b2 bio.Base) int {
-	if b1 == bio.X && b2 == bio.X {
-		return 0
-	}
-	if (b1 == bio.X && b2 != bio.X) ||
-		(b2 == bio.X && b1 != bio.X) {
-		return gap
-	}
-	if b1 != b2 {
-		return mismatch
-	}
-	return match
 }
 
 /////////////////////////

@@ -34,13 +34,17 @@ func TestGenSubMasks(t *testing.T) {
 }
 
 func TestMDP(t *testing.T) {
-	t.Log(Solve([]string{x1, x2, x3, x4}))
+	optScore := Solve([]string{x1, x2, x3, x4})
+	t.Log(optScore)
+	if optScore != 45 {
+		t.Error("Incorrect score.")
+	}
 }
 
 func TestMDPSimple(t *testing.T) {
 	optScore := Solve([]string{x5, x6, x7, x8})
 	t.Log(optScore)
 	if optScore != 36 {
-		t.Error("wrong score for simple MDP")
+		t.Error("Incorrect score.")
 	}
 }
