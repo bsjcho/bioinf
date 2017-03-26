@@ -26,21 +26,20 @@ func initialize(n *nussinov) {
 }
 
 func maxPairs(i, j int, n *nussinov) int {
-	if i == j || j == i-1 {
+	if j-i < 2 {
 		return 0
 	}
-	if n.matrix[i][j] > -1 {
-		return n.matrix[i][j]
-	}
-	n.matrix[i][j] = max(
-		maxPairs(i+1, j, n),
-		maxPairs(i, j-1, n),
-		maxPairs(i+1, j-1, n)+score(i, j, n),
-	)
-	for k := i + 1; k < j; k++ {
+	if n.matrix[i][j] == -1 {
 		n.matrix[i][j] = max(
-			n.matrix[i][j],
-			maxPairs(i, k, n)+maxPairs(k+1, j, n))
+			maxPairs(i+1, j, n),
+			maxPairs(i, j-1, n),
+			maxPairs(i+1, j-1, n)+score(i, j, n),
+		)
+		for k := i + 1; k < j; k++ {
+			n.matrix[i][j] = max(
+				n.matrix[i][j],
+				maxPairs(i, k, n)+maxPairs(k+1, j, n))
+		}
 	}
 	return n.matrix[i][j]
 }
@@ -48,10 +47,10 @@ func maxPairs(i, j int, n *nussinov) int {
 func score(i, j int, n *nussinov) int {
 	ib := string(n.sequence[i])
 	jb := string(n.sequence[j])
-	if ib == "G" && jb == "C" ||
-		ib == "C" && jb == "G" ||
-		ib == "A" && (jb == "T" || jb == "U") ||
-		(ib == "T" || ib == "U") && jb == "A" {
+	t := ib + jb
+	res := t == "AU" || t == "CG" || t == "GU" ||
+		t == "UA" || t == "GC" || t == "UG"
+	if res {
 		return 1
 	}
 	return 0
