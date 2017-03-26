@@ -1,8 +1,6 @@
 package mdp
 
 import (
-	"math"
-
 	bio "github.com/bsjcho/bioinf"
 	"github.com/bsjcho/nd"
 )
@@ -94,7 +92,7 @@ func (m *multiDP) optimalScore(idxs []int) (best int) {
 		score := bio.ColumnSPScore(bases)
 
 		// maintain best score
-		best = max(best, optScore+score)
+		best = bio.Max(best, optScore+score)
 	}
 	// save results. mark this specific set of indicies as cached.
 	m.table.Set(best, idxs)
@@ -195,14 +193,4 @@ func cpy(a []int) (b []int) {
 	b = make([]int, len(a))
 	copy(b, a)
 	return
-}
-
-func max(ints ...int) int {
-	max := math.MinInt64
-	for _, x := range ints {
-		if x > max {
-			max = x
-		}
-	}
-	return max
 }
